@@ -62,12 +62,6 @@ Class AuthorController extends AbstractController
         AuthorRepository $authorRepository, 
         EntityManagerInterface $em): JsonResponse
     {
-        $author = $authorRepository->find($author);
-
-        if (!$author) {
-            return new JsonResponse('Author not found', Response::HTTP_NOT_FOUND);
-        }
-
         $em->remove($author);
         $em->flush();
 
@@ -115,6 +109,6 @@ Class AuthorController extends AbstractController
         $em->persist($updatedAuthor);
         $em->flush();
 
-        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
     }
 }
