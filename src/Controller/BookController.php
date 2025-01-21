@@ -13,6 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -61,6 +62,7 @@ final class BookController extends AbstractController
      * @return JsonResponse
      */
     #[Route('/api/books/{id}', name: 'book_delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous devez être administrateur pour accéder à cette ressource')]
     public function delete(Book $book, 
         EntityManagerInterface $em, 
         SerializerInterface $serializer): JsonResponse
@@ -78,6 +80,7 @@ final class BookController extends AbstractController
      * @return JsonResponse
      */
     #[Route('/api/books', name: 'book_add', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous devez être administrateur pour accéder à cette ressource')]
     public function create(Request $request, 
         SerializerInterface $serializer, 
         EntityManagerInterface $em,
@@ -114,6 +117,7 @@ final class BookController extends AbstractController
      * @return JsonResponse
      */
     #[Route('/api/books/{id}', name: 'book_update', methods: ['PUT'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous devez être administrateur pour accéder à cette ressource')]
     public function update(Request $request, 
         Book $currentBook, 
         SerializerInterface $serializer, 

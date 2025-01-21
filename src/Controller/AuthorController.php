@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 Class AuthorController extends AbstractController
 {
@@ -59,6 +60,7 @@ Class AuthorController extends AbstractController
      * @return JsonResponse
      */
     #[Route('/api/authors/{id}', name: 'author_delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous devez être administrateur pour accéder à cette ressource')]
     public function delete(Author $author, 
         AuthorRepository $authorRepository, 
         EntityManagerInterface $em): JsonResponse
@@ -76,6 +78,7 @@ Class AuthorController extends AbstractController
      * @return JsonResponse
      */
     #[Route('/api/authors', name: 'author_add', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous devez être administrateur pour accéder à cette ressource')]
     public function add(Request $request, 
         SerializerInterface $serializer, 
         EntityManagerInterface $em, 
@@ -106,6 +109,7 @@ Class AuthorController extends AbstractController
      * @return JsonResponse
      */
     #[Route('/api/authors/{id}', name: 'author_update', methods: ['PUT'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous devez être administrateur pour accéder à cette ressource')]
     public function update(Request $request, 
         Author $currentAuthor, 
         SerializerInterface $serializer, 
