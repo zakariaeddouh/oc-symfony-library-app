@@ -13,6 +13,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 Class AuthorController extends AbstractController
 {
@@ -78,9 +79,15 @@ Class AuthorController extends AbstractController
     public function add(Request $request, 
         SerializerInterface $serializer, 
         EntityManagerInterface $em, 
-        UrlGeneratorInterface $urlGenerator): JsonResponse
+        UrlGeneratorInterface $urlGenerator,
+        ValidatorInterface $validator): JsonResponse
     {
         $author = $serializer->deserialize($request->getContent(), Author::class, 'json');
+
+        $errors = $validator->validate($author);
+        if (count($errors) > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
+        }
 
         $em->persist($author);
         $em->flush();
@@ -102,10 +109,17 @@ Class AuthorController extends AbstractController
     public function update(Request $request, 
         Author $currentAuthor, 
         SerializerInterface $serializer, 
-        EntityManagerInterface $em): JsonResponse
+        EntityManagerInterface $em,
+        ValidatorInterface $validator): JsonResponse
     {
         $updatedAuthor = $serializer->deserialize($request->getContent(), 
             Author::class, 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $currentAuthor]);
+
+        $errors = $validator->validate($updatedAuthor);
+        if (count($errors) > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
+        }
+        
         $em->persist($updatedAuthor);
         $em->flush();
 

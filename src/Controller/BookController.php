@@ -14,6 +14,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class BookController extends AbstractController
 {
@@ -81,9 +82,16 @@ final class BookController extends AbstractController
         SerializerInterface $serializer, 
         EntityManagerInterface $em,
         AuthorRepository $authorRepository,
-        UrlGeneratorInterface $urlGenerator): JsonResponse
+        UrlGeneratorInterface $urlGenerator,
+        ValidatorInterface $validator): JsonResponse
     {
         $book = $serializer->deserialize($request->getContent(), Book::class, 'json');
+
+        $errors = $validator->validate($book);
+        if (count($errors) > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
+        }
+
         $em->persist($book);
         $em->flush();
 
@@ -110,7 +118,8 @@ final class BookController extends AbstractController
         Book $currentBook, 
         SerializerInterface $serializer, 
         EntityManagerInterface $em,
-        AuthorRepository $authorRepository): JsonResponse
+        AuthorRepository $authorRepository,
+        ValidatorInterface $validator): JsonResponse
     {
         $updatedBook = $serializer->deserialize($request->getContent(), Book::class, 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $currentBook]);
         
@@ -118,6 +127,11 @@ final class BookController extends AbstractController
         $idAuthor = $content['idAuthor'] ?? -1;
 
         $updatedBook->setAuthor($authorRepository->find($idAuthor));
+
+        $errors = $validator->validate($updatedBook);
+        if (count($errors) > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
+        }
 
         $em->persist($updatedBook);
         $em->flush();
