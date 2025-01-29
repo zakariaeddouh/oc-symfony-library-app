@@ -16,6 +16,8 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 final class BookController extends AbstractController
 {
@@ -26,14 +28,21 @@ final class BookController extends AbstractController
      */
     #[Route('/api/books', name: 'book_list', methods: ['GET'])]
     public function list(BookRepository $bookRepository,
-    SerializerInterface $serializer,
-    Request $request): JsonResponse
+        SerializerInterface $serializer,
+        Request $request,
+        TagAwareCacheInterface $cache): JsonResponse
     {
         $page = $request->get('page', 1);
         $limit = $request->get('limit', 3);
-        $booksList = $bookRepository->findAllWithPagination($page, $limit);
 
-        $jsonBookList = $serializer->serialize($booksList, 'json', ['groups' => 'getBooks']);
+        $idCache = "getAllBooks-" . $page . "-" . $limit;
+
+        $jsonBookList = $cache->get($idCache, function (ItemInterface $item) use ($bookRepository, $page, $limit, $serializer) {
+            $item->tag("booksCache");
+            $bookList = $bookRepository->findAllWithPagination($page, $limit);
+            return $serializer->serialize($bookList, 'json', ['groups' => 'getBooks']);
+        });
+        
         return new JsonResponse($jsonBookList, Response::HTTP_OK, [], true);
     }
 
@@ -61,19 +70,21 @@ final class BookController extends AbstractController
     /**
      * @param Book $book
      * @param EntityManagerInterface $entityManager
-     * @param SerializerInterface $serializer
+     * @param TagAwareCacheInterface $cache
      * @return JsonResponse
      */
     #[Route('/api/books/{id}', name: 'book_delete', methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous devez être administrateur pour accéder à cette ressource')]
     public function delete(Book $book, 
         EntityManagerInterface $em, 
-        SerializerInterface $serializer): JsonResponse
+        TagAwareCacheInterface $cache): JsonResponse
     {
         $em->remove($book);
         $em->flush();
 
-        return new JsonResponse('null', Response::HTTP_NO_CONTENT);
+        $cache->invalidateTags(["booksCache"]);
+
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
     /**

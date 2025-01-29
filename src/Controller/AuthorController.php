@@ -15,6 +15,8 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 Class AuthorController extends AbstractController
 {
@@ -25,11 +27,21 @@ Class AuthorController extends AbstractController
      */
     #[Route('/api/authors', name: 'author_list', methods: ['GET'])]
     public function list(AuthorRepository $authorRepository, 
-        SerializerInterface $serializer): JsonResponse
+        SerializerInterface $serializer,
+        Request $request,
+        TagAwareCacheInterface $cache): JsonResponse
     {
-        $authorList = $authorRepository->findAll();
+        $page = $request->get('page', 1);
+        $limit = $request->get('limit', 1);
 
-        $jsonAuthorList = $serializer->serialize($authorList, 'json', ['groups' => 'getAuthors']);
+        $idCache = "getAllAuthors-" . $page . "-" . $limit;
+
+        $jsonAuthorList = $cache->get($idCache, function (ItemInterface $item) use ($authorRepository, $page, $limit, $serializer) {
+            $item->tag("authorsCache");
+            $authorList = $authorRepository->findAllWithPagination($page, $limit);
+            return $serializer->serialize($authorList, 'json', ['groups' => 'getAuthors']);
+        });
+
         return new JsonResponse($jsonAuthorList, Response::HTTP_OK, [], true);
     }
 
@@ -63,10 +75,13 @@ Class AuthorController extends AbstractController
     #[IsGranted('ROLE_ADMIN', message: 'Vous devez être administrateur pour accéder à cette ressource')]
     public function delete(Author $author, 
         AuthorRepository $authorRepository, 
-        EntityManagerInterface $em): JsonResponse
+        EntityManagerInterface $em,
+        TagAwareCacheInterface $cache): JsonResponse
     {
         $em->remove($author);
         $em->flush();
+
+        $cache->invalidateTags(["booksCache"]);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
