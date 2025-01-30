@@ -118,7 +118,7 @@ Class AuthorController extends AbstractController
 
     /**
      * @param Request $request
-     * @param Author $author
+     * @param Author $currentAuthor
      * @param SerializerInterface $serializer
      * @param EntityManagerInterface $em
      * @return JsonResponse
