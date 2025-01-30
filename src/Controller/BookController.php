@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Book;
 use App\Repository\AuthorRepository;
 use App\Repository\BookRepository;
+use App\Service\VersioningService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,6 +26,8 @@ final class BookController extends AbstractController
     /**
      * @param BookRepository $bookRepository
      * @param SerializerInterface $serializer
+     * @param Request $request
+     * @param TagAwareCacheInterface $cache
      * @return JsonResponse
      */
     #[Route('/api/books', name: 'book_list', methods: ['GET'])]
@@ -50,15 +53,18 @@ final class BookController extends AbstractController
 
     /**
      * @param Book $book
-     * @param BookRepository $bookRepository
      * @param SerializerInterface $serializer
+     * @param VersioningService $versioningService
      * @return JsonResponse
      */
     #[Route('/api/books/{id}', name: 'book_show', methods: ['GET'])]
     public function show(Book $book,
-        SerializerInterface $serializer): JsonResponse
+        SerializerInterface $serializer,
+        VersioningService $versioningService): JsonResponse
     {
+        $version = $versioningService->getVersion();
         $context = SerializationContext::create()->setGroups(["getBooks"]);
+        $context->setVersion($version);
         $jsonBook = $serializer->serialize($book, 'json', $context);
         return new JsonResponse($jsonBook, Response::HTTP_OK, [], true);
     }
@@ -86,7 +92,10 @@ final class BookController extends AbstractController
     /**
      * @param Request $request
      * @param SerializerInterface $serializer
-     * @param EntityManagerInterface $entityManager
+     * @param EntityManagerInterface $em
+     * @param AuthorRepository $authorRepository
+     * @param UrlGeneratorInterface $urlGenerator
+     * @param ValidatorInterface $validator
      * @return JsonResponse
      */
     #[Route('/api/books', name: 'book_add', methods: ['POST'])]
@@ -125,9 +134,11 @@ final class BookController extends AbstractController
 
     /**
      * @param Request $request
-     * @param Book $book
+     * @param Book $currentBook
      * @param SerializerInterface $serializer
      * @param EntityManagerInterface $em
+     * @param AuthorRepository $authorRepository
+     * @param ValidatorInterface $validator
      * @return JsonResponse
      */
     #[Route('/api/books/{id}', name: 'book_update', methods: ['PUT'])]
