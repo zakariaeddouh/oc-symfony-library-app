@@ -18,14 +18,40 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use Nelmio\ApiDocBundle\Annotation\Model;
+use Nelmio\ApiDocBundle\Annotation\Security;
+use OpenApi\Attributes as OA;
 
+#[OA\Tag(name:"Author")]
 Class AuthorController extends AbstractController
 {
     /**
+     * This method returns a list of authors
+     * 
      * @param AuthorRepository $authorRepository
      * @param SerializerInterface $serializer
      * @return JsonResponse
      */
+    #[OA\Response(
+        response: 200,
+        description: 'This method returns a list of authors',
+        content: new OA\JsonContent(
+            type: 'array',
+            items: new OA\Items(ref: new Model(type: Author::class))
+        )
+    )]
+    #[OA\Parameter(
+        name:"page",
+        in:"query",
+        description:"La page que l'on veut récupérer",
+        schema: new OA\Schema(type: 'int')
+    )]
+    #[OA\Parameter(
+        name:"limit",
+        in:"query",
+        description:"Le nombre d'éléments que l'on veut récupérer",
+        schema: new OA\Schema(type: 'int')
+    )]
     #[Route('/api/authors', name: 'author_list', methods: ['GET'])]
     public function list(AuthorRepository $authorRepository, 
         SerializerInterface $serializer,
@@ -48,6 +74,8 @@ Class AuthorController extends AbstractController
     }
 
     /**
+     * This method returns an author
+     * 
      * @param Author $author
      * @param AuthorRepository $authorRepository
      * @param SerializerInterface $serializer
@@ -64,6 +92,8 @@ Class AuthorController extends AbstractController
     }
 
     /**
+     * This method deletes an author
+     * 
      * @param Author $author
      * @param AuthorRepository $authorRepository
      * @return JsonResponse
@@ -84,6 +114,8 @@ Class AuthorController extends AbstractController
     }
 
     /**
+     * This method adds an author
+     * 
      * @param Request $request
      * @param SerializerInterface $serializer
      * @param EntityManagerInterface $em
@@ -117,6 +149,8 @@ Class AuthorController extends AbstractController
     }
 
     /**
+     * This method updates an author
+     * 
      * @param Request $request
      * @param Author $currentAuthor
      * @param SerializerInterface $serializer
