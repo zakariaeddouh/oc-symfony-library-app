@@ -7,29 +7,55 @@ use App\Repository\AuthorRepository;
 use App\Repository\BookRepository;
 use App\Service\VersioningService;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Attribute\Route;
-use JMS\Serializer\SerializerInterface;
 use JMS\Serializer\SerializationContext;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use JMS\Serializer\SerializerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use Nelmio\ApiDocBundle\Annotation\Model;
+use Nelmio\ApiDocBundle\Annotation\Security;
+use OpenApi\Attributes as OA;
 
-final class BookController extends AbstractController
+#[OA\Tag(name:"Book")]
+Class BookController extends AbstractController
 {
     /**
+     * This method returns a list of books
+     * 
      * @param BookRepository $bookRepository
      * @param SerializerInterface $serializer
      * @param Request $request
      * @param TagAwareCacheInterface $cache
      * @return JsonResponse
-     */
+     *
+    **/
+    #[OA\Response(
+        response: 200,
+        description: 'This method returns a list of books',
+        content: new OA\JsonContent(
+            type: 'array',
+            items: new OA\Items(ref: new Model(type: Book::class))
+        )
+    )]
+    #[OA\Parameter(
+        name:"page",
+        in:"query",
+        description:"La page que l'on veut récupérer",
+        schema: new OA\Schema(type: 'int')
+    )]
+    #[OA\Parameter(
+        name:"limit",
+        in:"query",
+        description:"Le nombre d'éléments que l'on veut récupérer",
+        schema: new OA\Schema(type: 'int')
+    )]
     #[Route('/api/books', name: 'book_list', methods: ['GET'])]
     public function list(BookRepository $bookRepository,
         SerializerInterface $serializer,
@@ -52,11 +78,21 @@ final class BookController extends AbstractController
     }
 
     /**
+     * This method returns a detail of a book
+     * 
      * @param Book $book
      * @param SerializerInterface $serializer
      * @param VersioningService $versioningService
      * @return JsonResponse
      */
+    #[OA\Response(
+        response: 200,
+        description: 'This method returns a detail of a book',
+        content: new OA\JsonContent(
+            type: 'array',
+            items: new OA\Items(ref: new Model(type: Book::class))
+        )
+    )]
     #[Route('/api/books/{id}', name: 'book_show', methods: ['GET'])]
     public function show(Book $book,
         SerializerInterface $serializer,
@@ -70,6 +106,8 @@ final class BookController extends AbstractController
     }
 
     /**
+     * This method deletes a book
+     * 
      * @param Book $book
      * @param EntityManagerInterface $entityManager
      * @param TagAwareCacheInterface $cache
@@ -90,6 +128,8 @@ final class BookController extends AbstractController
     }
 
     /**
+     * This method adds a book
+     * 
      * @param Request $request
      * @param SerializerInterface $serializer
      * @param EntityManagerInterface $em
@@ -133,6 +173,8 @@ final class BookController extends AbstractController
     }
 
     /**
+     * This method updates a book
+     * 
      * @param Request $request
      * @param Book $currentBook
      * @param SerializerInterface $serializer
